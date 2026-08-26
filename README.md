@@ -1,44 +1,64 @@
-# Azure Zero-Trust Cloud Infrastructure Deployment
+# 🛡️ Azure Zero-Trust Cloud Infrastructure Deployment
 
-## Descripción General
-Documentación técnica del diseño, segmentación y aplicación de controles de seguridad sobre una infraestructura en Microsoft Azure, aplicando el modelo **Zero Trust** ("Nunca confiar, siempre verificar") y el Principio de Menor Privilegio (PoLP).
-
----
-
-## Arquitectura del Entorno
-
-* **Grupo de Recursos:** `RG-Seguridad-Proyecto` (Región: East US)
-* **Red Virtual (VNet):** `VNet-Principal` (`10.0.0.0/16`) con segmentación de subredes aisladas.
-* **Cuenta de Almacenamiento:** `stseguridadjh2026` (TLS 1.2 forzado, acceso público deshabilitado).
-* **Bóveda de Claves:** `kv-seguridad-jh2026` (Custodia criptográfica de secretos con Soft-Delete habilitado).
+## 📌 Descripción General
+Documentación técnica del diseño, segmentación y despliegue de una infraestructura segura en **Microsoft Azure**, aplicando los principios del modelo **Zero Trust** ("Nunca confiar, siempre verificar") y el **Principio de Menor Privilegio (PoLP)** para la mitigación de vectores de ataque e hiper-segmentación de red.
 
 ---
 
-## Paso a Paso de la Implementación
+## 📐 Arquitectura del Entorno
+
+* **Grupo de Recursos:** `RG-Seguridad-Proyecto` (Región: `East US`)
+* **Red Virtual (VNet):** `VNet-Principal` (`10.0.0.0/16`) con subredes segmentadas.
+* **Cuenta de Almacenamiento:** `stseguridadjh2026` (TLS 1.2 forzado, bloqueos de acceso público).
+* **Bóveda de Claves:** `kv-seguridad-jh2026` (Custodia criptográfica con Soft-Delete).
+
+---
+
+## 🛠️ Despliegue Paso a Paso
 
 ### 1. Gobernanza y Grupo de Recursos
-Creación del grupo de recursos `RG-Seguridad-Proyecto` en la región `East US` como contenedor lógico principal para la gestión de recursos y etiquetado de control de costos.
+Creación e inicialización del grupo de recursos `RG-Seguridad-Proyecto` como contenedor lógico de gestión y asignación de políticas de gobernanza en la región `East US`.
 
-### 2. Arquitectura de Red y Segmentación (VNet)
-Despliegue de la red virtual `VNet-Principal` con espacio de direcciones `10.0.0.0/16`. Se aplicó una arquitectura de defensa en profundidad mediante subredes para aislar capas expuestas (Frontend), lógica de negocio (Backend) y datos (Database).
-
-### 3. Control de Acceso e Identidades (RBAC & Entra ID)
-Aplicación de roles específicos de Microsoft Entra ID respetando el Principio de Menor Privilegio (PoLP):
-* `Key Vault Secrets Officer` para administración exclusiva de credenciales.
-* `Storage Blob Data Contributor` para gestión de objetos mediante tokens autenticados sin compartir claves maestras.
-
-### 4. Hardening de Almacenamiento (Storage Account)
-Despliegue de `stseguridadjh2026` aplicando configuraciones de endurecimiento:
-* Restricción de versión mínima de transferencia a **TLS 1.2**.
-* Bloqueo global de acceso anónimo a blobs.
-* Deshabilitación total de acceso desde redes públicas no autorizadas.
-
-### 5. Custodia de Secretos (Azure Key Vault)
-Configuración de la bóveda `kv-seguridad-jh2026` con protección contra borrado accidental (*Soft-Delete*) activa. Se centralizó la custodia cifrada de credenciales sensibles para prevenir la exposición de contraseñas en código fuente.
+![Grupo de Recursos](01-resource-group.png)
 
 ---
 
-## Tecnologías Utilizadas
+### 2. Segmentación de Red y Control de Tráfico (VNet & Subnets)
+Despliegue del direccionamiento `10.0.0.0/16` y aislamiento de capas operativas mediante subredes dedicate (`Frontend-Subnet`, `Backend-Subnet`, `DB-Subnet`). Se establecieron reglas de Network Security Groups (NSG) para restringir el tráfico inter-subnet únicamente a los puertos explícitamente autorizados.
+
+![Segmentación de Red Virtual](02-vnet-subnets.png)
+
+---
+
+### 3. Hardening de Cuenta de Almacenamiento (Storage Account)
+Implementación y endurecimiento de la cuenta `stseguridadjh2026`:
+* **Cifrado en tránsito:** Exigencia obligatoria del protocolo **TLS 1.2**.
+* **Aislamiento:** Deshabilitación de lectura pública anónima en contenedores Blob.
+* **Restricción de Red:** Filtrado por firewall de almacenamiento limitando el acceso solo a IPs autorizadas.
+
+![Configuración de Seguridad en Storage Account](03-storage-hardening.png)
+
+---
+
+### 4. Custodia Criptográfica y Gestión de Secretos (Azure Key Vault)
+Configuración de `kv-seguridad-jh2026` para el almacenamiento de secretos, llaves de cifrado y cadenas de conexión. 
+* Habilitación de la funcionalidad **Soft-Delete** y **Purge Protection** para evitar la eliminación maliciosa o accidental de activos criptográficos.
+
+![Bóveda de Claves Key Vault](04-key-vault.png)
+
+---
+
+### 5. Control de Acceso Basado en Roles (RBAC & Entra ID)
+Asignación granular de permisos a identidades de Microsoft Entra ID aplicando PoLP:
+* `Key Vault Secrets Officer`: Administración exclusiva de secretos sin acceso a la administración del recurso Azure.
+* `Storage Blob Data Contributor`: Acceso a objetos por tokens autenticados sin requerir compartir las claves primarias/secundarias del almacenamiento.
+
+![Asignación de Roles RBAC](05-rbac-roles.png)
+
+---
+
+## 🚀 Tecnologías y Herramientas Utilizadas
 * **Cloud Provider:** Microsoft Azure
-* **Identity & Security:** Microsoft Entra ID (RBAC), Azure Key Vault
-* **Networking:** Virtual Networks (VNet), Subnets, Network Security Groups (NSG)
+* **Identidad & Accesos:** Microsoft Entra ID (RBAC), Azure Key Vault
+* **Seguridad en Redes:** Virtual Networks (VNet), Subnets, Network Security Groups (NSG)
+* **Cifrado & Custodia:** TLS 1.2/1.3, Soft-Delete, Secret Management
